@@ -35,7 +35,7 @@ main = do
     -- http server
     ref      <- newIORef 0
     spockCfg <- defaultSpockCfg EmptySession PCNoDatabase (DummyAppState ref)
-    runSpock 8080 $ spock spockCfg (app errorChan)
+    runSpock 8075 $ spock spockCfg (app errorChan)
 
 app :: Chan T.Text -> SpockM () MySession MyAppState ()
 app errorChan = do
