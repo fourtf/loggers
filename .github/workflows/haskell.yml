@@ -33,10 +33,10 @@ jobs:
     - name: Install dependencies
       run: |
         cabal update
-        cabal build --only-dependencies --enable-tests --enable-benchmarks  --ghc-options='-optl-static -optl-pthread'
+        cabal build --only-dependencies --enable-tests --enable-benchmarks  --ghc-options='-optl-static -optl-pthread -fPIC'
     - name: Build
       run: |
-        cabal build --enable-tests --enable-benchmarks all --ghc-options='-optl-static -optl-pthread' 
+        cabal build --enable-tests --enable-benchmarks all --ghc-options='-optl-static -optl-pthread -fPIC' 
         cd ./dist-newstyle/build/x86_64-linux/ghc-8.6.5/loggers-0.1.0.0/x/loggers/build/loggers
         strip loggers
         zip loggers.zip loggers
