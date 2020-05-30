@@ -47,11 +47,12 @@ jobs:
     - name: Create Release
       id: create_release
       if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
-      uses: actions/create-release@v1
+      uses: pajlada/create-release@v2
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         tag_name: github-actions-nightly
+        backup_tag_name: github-actions-nightly-backup
         release_name: GitHub Actions Nightly
         draft: false
         prerelease: false
