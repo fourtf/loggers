@@ -17,16 +17,21 @@ import           Control.Concurrent.Chan
 import           Data.IORef
 import           Data.Monoid
 import qualified Data.Text                     as T
-import           Debug.Trace
-import qualified Data.Text.IO                  as TIO
+import qualified Data.Text.Encoding            as T
+import qualified Data.Text.IO                  as T
 
 data MySession = EmptySession
 newtype MyAppState = DummyAppState (IORef Int)
 
+data Error = Error { errType :: T.Text
+    , errAppName :: T.Text
+    , errMessage :: T.Text
+    } deriving Show
+
 main :: IO ()
 main = do
     errorChan <- newChan
-    token     <- TIO.readFile "./secret_token"
+    token     <- T.readFile "./secret_token"
     channelId <- Snowflake . read <$> readFile "./channel_id"
 
     -- discord conn
@@ -37,29 +42,40 @@ main = do
     spockCfg <- defaultSpockCfg EmptySession PCNoDatabase (DummyAppState ref)
     runSpock 8075 $ spock spockCfg (app errorChan)
 
-app :: Chan T.Text -> SpockM () MySession MyAppState ()
+app :: Chan Error -> SpockM () MySession MyAppState ()
 app errorChan = do
     get root $ text "200"
     post ("error" <//> var) $ \appName -> do
-        liftIO $ writeChan errorChan appName
+        body' <- T.decodeUtf8 <$> body
+        liftIO $ writeChan errorChan $ Error { errType    = "error"
+                                             , errAppName = appName
+                                             , errMessage = body'
+                                             }
 
         text "200"
 
-logErrors :: Chan T.Text -> T.Text -> Snowflake -> IO ()
+logErrors :: Chan Error -> T.Text -> Snowflake -> IO ()
 logErrors chan token channelId = forever $ do
     userFacingError <- runDiscord $ def
         { discordToken   = token
         , discordOnEvent = onDiscordEvent
         , discordOnStart = void . forkIO . (void . loop)
         }
-    TIO.putStrLn userFacingError
+    T.putStrLn userFacingError
 
   where
     loop dis = do
-        msg <- readChan chan
-        err <- restCall dis $ CreateMessage channelId msg
-        print err
+        error' <- readChan chan
+        result <- restCall dis $ CreateMessage channelId $ formatError error'
+        case result of
+            Left err -> print err
+            _        -> return ()
         loop dis
+
+
+formatError :: Error -> T.Text
+formatError error =
+    errType error <> " from '" <> errAppName error <> "': " <> errMessage error
 
 onDiscordEvent :: DiscordHandle -> Event -> IO ()
 onDiscordEvent dis event = case event of
