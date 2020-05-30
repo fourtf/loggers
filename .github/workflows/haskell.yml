@@ -35,6 +35,34 @@ jobs:
         cabal update
         cabal build --only-dependencies --enable-tests --enable-benchmarks
     - name: Build
-      run: cabal build --enable-tests --enable-benchmarks all
+      run: |
+        cabal build --enable-tests --enable-benchmarks all
+        cd ./dist-newstyle/build/x86_64-linux/ghc-8.6.5/loggers-0.1.0.0/x/loggers/build/loggers
+        zip loggers.zip loggers
     - name: Run tests
       run: cabal test all
+      
+    # create release and upload asset have the same condition
+    - name: Create Release
+      id: create_release
+      if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: github-actions-nightly
+        backup_tag_name: backup-github-actions-nightly
+        release_name: GitHub Actions Nightly
+        draft: false
+        prerelease: false
+    - name: Upload Release Asset
+      id: upload-release-asset
+      if: (github.event_name == 'push' && github.ref == 'refs/heads/master')
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps 
+        asset_path: ./dist-newstyle/build/x86_64-linux/ghc-8.6.5/loggers-0.1.0.0/x/loggers/build/loggers/loggers.zip
+        asset_name: loggers.zip
+        asset_content_type: application/zip
