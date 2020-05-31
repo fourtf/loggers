@@ -31,8 +31,8 @@ data Error = Error { errType :: T.Text
 main :: IO ()
 main = do
     errorChan <- newChan
-    token     <- T.readFile "./secret_token"
-    channelId <- Snowflake . read <$> readFile "./channel_id"
+    token     <- T.readFile "./discord_token"
+    channelId <- Snowflake . read <$> readFile "./discord_channel_id"
 
     -- discord conn
     forkIO $ logErrors errorChan token channelId
