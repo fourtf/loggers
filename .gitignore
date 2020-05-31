@@ -1,4 +1,4 @@
-channel_id
+discord_channel_id
 dist/
 dist-newstyle/
-secret_token
+discord_token
