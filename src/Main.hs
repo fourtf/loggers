@@ -37,16 +37,18 @@ main = do
     channelId <- Snowflake . read <$> readVar "DISCORD_CHANNEL_ID"
                                               "./discord_channel_id"
 
-    -- discord conn
     forkIO $ logErrors errorChan token channelId
+    runSpockServer errorChan
 
-    -- http server
+
+runSpockServer :: Chan Error -> IO ()
+runSpockServer errorChan = do
     ref      <- newIORef 0
     spockCfg <- defaultSpockCfg EmptySession PCNoDatabase (DummyAppState ref)
-    runSpock 8075 $ spock spockCfg (app errorChan)
+    runSpock 8075 $ spock spockCfg (spockApp errorChan)
 
-app :: Chan Error -> SpockM () MySession MyAppState ()
-app errorChan = do
+spockApp :: Chan Error -> SpockM () MySession MyAppState ()
+spockApp errorChan = do
     get root $ text "200"
     post ("error" <//> var) $ \appName -> do
         body' <- T.decodeUtf8 <$> body
@@ -56,6 +58,7 @@ app errorChan = do
                                              }
 
         text "200"
+
 
 logErrors :: Chan Error -> T.Text -> Snowflake -> IO ()
 logErrors chan token channelId = forever $ do
@@ -94,6 +97,7 @@ fromBot m = userIsBot (messageAuthor m)
 
 isPing :: T.Text -> Bool
 isPing = ("ping" `T.isInfixOf`) . T.toLower
+
 
 readVar :: String -> String -> IO String
 readVar envName fileName = do
