@@ -10,6 +10,7 @@ import           Discord.Internal.Rest.Channel
 import           Web.Spock
 import           Web.Spock.Config
 
+import           Control.Applicative
 import           Control.Monad
 import           Control.Monad.Trans
 import           Control.Concurrent
@@ -19,6 +20,7 @@ import           Data.Monoid
 import qualified Data.Text                     as T
 import qualified Data.Text.Encoding            as T
 import qualified Data.Text.IO                  as T
+import           System.Environment
 
 data MySession = EmptySession
 newtype MyAppState = DummyAppState (IORef Int)
@@ -31,8 +33,9 @@ data Error = Error { errType :: T.Text
 main :: IO ()
 main = do
     errorChan <- newChan
-    token     <- T.readFile "./discord_token"
-    channelId <- Snowflake . read <$> readFile "./discord_channel_id"
+    token     <- T.pack <$> readVar "DISCORD_TOKEN" "./discord_token"
+    channelId <- Snowflake . read <$> readVar "DISCORD_CHANNEL_ID"
+                                              "./discord_channel_id"
 
     -- discord conn
     forkIO $ logErrors errorChan token channelId
@@ -91,3 +94,16 @@ fromBot m = userIsBot (messageAuthor m)
 
 isPing :: T.Text -> Bool
 isPing = ("ping" `T.isInfixOf`) . T.toLower
+
+readVar :: String -> String -> IO String
+readVar envName fileName = do
+    putStrLn
+        $  "Reading from env '"
+        <> envName
+        <> "' or file '"
+        <> fileName
+        <> "'"
+    channelId <- lookupEnv "DISCORD_CHANNEL_ID"
+    case channelId of
+        (Just envVar) -> return envVar
+        Nothing       -> readFile fileName
