@@ -107,7 +107,7 @@ readVar envName fileName = do
         <> "' or file '"
         <> fileName
         <> "'"
-    channelId <- lookupEnv "DISCORD_CHANNEL_ID"
+    channelId <- lookupEnv envName
     case channelId of
         (Just envVar) -> return envVar
         Nothing       -> readFile fileName
