@@ -11,6 +11,6 @@ RUN strip /root/.cabal/bin/loggers
 
 FROM debian:stretch
 RUN apt update
-RUN apt install -y --no-install-recommends libgmp10
+RUN apt install -y --no-install-recommends libgmp10 ca-certificates
 COPY --from=mybuild /root/.cabal/bin/loggers /app/loggers
 ENTRYPOINT ["/app/loggers"]
